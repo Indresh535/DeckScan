@@ -9,6 +9,20 @@
     <h2>Upload and Scan Image</h2>
     <form action="{{ url_for('upload_file') }}" method="post" enctype="multipart/form-data">
         <input type="file" name="file">
+        <br>
+        <label for="threshold">Threshold:</label>
+        <input type="range" id="threshold" name="threshold" min="0" max="255" value="150">
+        <br>
+        <label for="noise_reduction">Noise Reduction:</label>
+        <input type="checkbox" id="noise_reduction" name="noise_reduction">
+        <br>
+        <label for="morph_transform">Morphological Transform:</label>
+        <select id="morph_transform" name="morph_transform">
+            <option value="none">None</option>
+            <option value="dilation">Dilation</option>
+            <option value="erosion">Erosion</option>
+        </select>
+        <br>
         <input type="submit" value="Upload and Scan">
     </form>
 </body>

@@ -3,7 +3,6 @@ from flask import Flask, render_template, request, redirect, url_for
 from werkzeug.utils import secure_filename
 import cv2
 import easyocr
-from matplotlib import pyplot as plt
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -32,29 +31,42 @@ def upload_file():
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(filepath)
 
+        # Get processing parameters from form
+        threshold = int(request.form.get('threshold', 150))
+        noise_reduction = bool(request.form.get('noise_reduction', False))
+        morph_transform = request.form.get('morph_transform', 'none')
+
         # Process the image
-        result = process_image(filepath)
+        result = process_image(filepath, threshold, noise_reduction, morph_transform)
         return render_template('result.html', result=result, filename=filename, enumerate=enumerate)
 
     return redirect(request.url)
 
-def process_image(image_path):
+def process_image(image_path, threshold, noise_reduction, morph_transform):
     # Read the image using OpenCV
     image = cv2.imread(image_path)
     gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    _, binary_image = cv2.threshold(gray_image, 150, 255, cv2.THRESH_BINARY_INV)
+    
+    # Apply thresholding
+    _, binary_image = cv2.threshold(gray_image, threshold, 255, cv2.THRESH_BINARY_INV)
 
-    # Apply Gaussian blur to reduce noise
-    #blurred_image = cv2.GaussianBlur(gray_image, (5, 5), 0)
-    
-    # Apply adaptive thresholding
-    #binary_image = cv2.adaptiveThreshold(blurred_image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2)
-    
+    # Apply noise reduction if selected
+    if noise_reduction:
+        binary_image = cv2.medianBlur(binary_image, 3)
+
+    # Apply morphological transformations if selected
+    if morph_transform == 'dilation':
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+        binary_image = cv2.dilate(binary_image, kernel, iterations=1)
+    elif morph_transform == 'erosion':
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+        binary_image = cv2.erode(binary_image, kernel, iterations=1)
+
     # Initialize EasyOCR reader
     reader = easyocr.Reader(['en'])
     results = reader.readtext(binary_image)
 
-    # Initialize a list to store detected four-digit numbers and their coordinates
+    # Initialize a list to store detected digit numbers and their coordinates
     digit_numbers = []
 
     # Iterate over the results to extract coordinates and digits
