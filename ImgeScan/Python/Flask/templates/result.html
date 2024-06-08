@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scan Result</title>
+</head>
+<body>
+    <h2>Scan Result</h2>
+    <h3>Uploaded Image</h3>
+    <img src="{{ url_for('static', filename='uploads/' ~ filename) }}" alt="Uploaded Image">
+
+    <h3>Processed Image</h3>
+    <img src="{{ url_for('static', filename='uploads/output_' ~ filename) }}" alt="Processed Image">
+
+    <h3>Detected Cabin Numbers and Coordinates</h3>
+    <table border="1">
+        <tr>
+            <th>Sl No</th>
+            <th>Cabin Number</th>
+            <th>Coordinates</th>
+        </tr>
+        {% for i, (number, x1, y1, x2, y2) in enumerate(result.numbers) %}
+        <tr>
+            <td>{{ i + 1 }}</td>
+            <td>{{ number }}</td>
+            <td>{{ (x1 + x2) // 2 }}, {{ (y1 + y2) // 2 }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>
