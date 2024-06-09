@@ -1,0 +1,12 @@
+
+
+### Training Your Own Model for OCR
+To train your own OCR model, you might want to consider using frameworks like TensorFlow or PyTorch. Here are the steps in general:
+1. **Data Collection**: Collect a large dataset of images containing the digits you want to recognize.
+2. **Data Annotation**: Annotate the images with the corresponding digit labels.
+3. **Model Architecture**: Choose an appropriate model architecture for OCR (e.g., a CNN).
+4. **Training**: Train the model on your annotated dataset.
+5. **Evaluation**: Evaluate the model performance and fine-tune as necessary.
+6. **Deployment**: Deploy the trained model for inference.
+
+For detailed guidance on training custom OCR models, you may refer to tutorials and courses on deep learning and computer vision. Libraries such as TensorFlow, PyTorch, and OpenCV are often used in such tasks.

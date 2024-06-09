@@ -4,6 +4,132 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Scan Result</title>
+    <style>
+        #uploaded-image {
+            position: relative;
+        }
+        #uploaded-image img {
+            max-width: 100%;
+            height: auto;
+        }
+        .selection-box {
+            border: 2px dashed red;
+            position: absolute;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <h2>Scan Result</h2>
+    <h3>Uploaded Image</h3>
+    <div>
+        <img src="{{ url_for('static', filename='uploads/' ~ filename) }}" alt="Uploaded Image">
+    </div>
+
+    <h3>Processed Image</h3>
+    <div id="uploaded-image">
+        <img  id="image" src="{{ url_for('static', filename='uploads/output_' ~ filename) }}" alt="Processed Image">
+    </div>
+    <h3>Detected Cabin Numbers and Coordinates</h3>
+    <table border="1">
+        <tr>
+            <th>Sl No</th>
+            <th>Cabin Number</th>
+            <th>Coordinates</th>
+        </tr>
+        {% for i, (number, x1, y1, x2, y2) in enumerate(result.numbers) %}
+        <tr>
+            <td>{{ i + 1 }}</td>
+            <td>{{ number }}</td>
+            <td>{{ (x1 + x2) // 2 }}, {{ (y1 + y2) // 2 }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <script>
+        const image = document.getElementById('image');
+        let startX, startY, endX, endY;
+        let selectionBox = null;
+    
+        image.addEventListener('mousedown', (e) => {
+            startX = e.offsetX;
+            startY = e.offsetY;
+    
+            selectionBox = document.createElement('div');
+            selectionBox.classList.add('selection-box');
+            selectionBox.style.left = startX + 'px';
+            selectionBox.style.top = startY + 'px';
+            document.getElementById('uploaded-image').appendChild(selectionBox);
+        });
+    
+        image.addEventListener('mousemove', (e) => {
+            if (!selectionBox) return;
+    
+            endX = e.offsetX;
+            endY = e.offsetY;
+    
+            selectionBox.style.width = Math.abs(endX - startX) + 'px';
+            selectionBox.style.height = Math.abs(endY - startY) + 'px';
+            selectionBox.style.left = Math.min(endX, startX) + 'px';
+            selectionBox.style.top = Math.min(endY, startY) + 'px';
+        });
+    
+        image.addEventListener('mouseup', async (e) => {
+            endX = e.offsetX;
+            endY = e.offsetY;
+            const filename = '{{ filename }}';
+            const x1 = Math.min(startX, endX);
+            const y1 = Math.min(startY, endY);
+            const x2 = Math.max(startX, endX)+300;
+            const y2 = Math.max(startY, endY)+300;
+            console.log(`Selected coordinates: x1=${x1}, y1=${y1}, x2=${x2}, y2=${y2}`);
+    
+            try {
+                const response = await fetch('/process_area', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ filename, x1, y1, x2, y2 }),
+                });
+                const result = await response.json();
+                console.log("result ",result); // Log the result for debugging
+                if (result.error) {
+                    alert(result.error);
+                } else {
+                    updateTable(result.numbers);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+            selectionBox.remove();
+            selectionBox = null;
+        });
+    
+        function updateTable(newNumbers) {
+            const table = document.querySelector('table');
+            newNumbers.forEach((number, index) => {
+                const row = table.insertRow();
+                row.insertCell(0).innerText = table.rows.length - 1;
+                row.insertCell(1).innerText = number[0];
+                row.insertCell(2).innerText = `${(number[1] + number[3]) / 2}, ${(number[2] + number[4]) / 2}`;
+            });
+        }
+    </script>
+    
+    
+</body>
+</html>
+
+
+
+
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scan Result</title>
 </head>
 <body>
     <h2>Scan Result</h2>
@@ -11,7 +137,7 @@
     <img src="{{ url_for('static', filename='uploads/' ~ filename) }}" alt="Uploaded Image">
 
     <h3>Processed Image</h3>
-    <img src="{{ url_for('static', filename='uploads/output_' ~ filename) }}" alt="Processed Image">
+    <img src="{{ url_for('static', filename='uploads/' ~ 'output_' ~ filename) }}" alt="Processed Image">
 
     <h3>Detected Cabin Numbers and Coordinates</h3>
     <table border="1">
@@ -29,4 +155,4 @@
         {% endfor %}
     </table>
 </body>
-</html>
+</html> -->
