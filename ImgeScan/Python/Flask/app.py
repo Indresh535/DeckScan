@@ -5,6 +5,7 @@ import cv2
 import easyocr
 import numpy as np
 from selectinwindow import DragRectangle, dragrect
+from PIL import Image, ImageSequence
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -56,6 +57,39 @@ def process_area():
     return jsonify(area_result)
 
 
+def get_hex_color(image, x1, y1, x2, y2):
+    # Crop the area of the detected number
+    cropped_area = image[y1:y2, x1:x2]
+    # Calculate the average color in the cropped area
+    avg_color_per_row = np.average(cropped_area, axis=0)
+    avg_color = np.average(avg_color_per_row, axis=0)
+    # Convert the average color to hexadecimal format
+    hex_color = '#{:02x}{:02x}{:02x}'.format(int(avg_color[2]), int(avg_color[1]), int(avg_color[0]))
+    return hex_color
+
+
+def overlay_gif(image, gif_path, x, y):
+    # Open the GIF file
+    gif = Image.open(gif_path)
+    # Convert GIF frames to a format compatible with OpenCV
+    gif_frames = [cv2.cvtColor(np.array(frame), cv2.COLOR_RGBA2BGRA) for frame in ImageSequence.Iterator(gif)]
+    
+    # Resize the GIF frames to fit the detected area
+    height, width, _ = image.shape
+    for i in range(len(gif_frames)):
+        gif_frames[i] = cv2.resize(gif_frames[i], (x2 - x1, y2 - y1))
+
+    # Overlay the GIF frames on the image
+    for frame in gif_frames:
+        y1, y2, x1, x2 = y, y + frame.shape[0], x, x + frame.shape[1]
+        alpha_s = frame[:, :, 3] / 255.0
+        alpha_l = 1.0 - alpha_s
+        for c in range(0, 3):
+            image[y1:y2, x1:x2, c] = (alpha_s * frame[:, :, c] + alpha_l * image[y1:y2, x1:x2, c])
+    
+    return image
+
+
 def process_image(image_path, threshold, noise_reduction, morph_transform):
     print("process_image image_path", image_path)
     # Read the image using OpenCV
@@ -90,10 +124,12 @@ def process_image(image_path, threshold, noise_reduction, morph_transform):
             (top_left, top_right, bottom_right, bottom_left) = bbox
             x1, y1 = int(top_left[0]), int(top_left[1])
             x2, y2 = int(bottom_right[0]), int(bottom_right[1])
-            digit_numbers.append((text, x1, y1, x2, y2))
+            digit_numbers.append((text, x1, y1, x2, y2, get_hex_color(image, x1, y1, x2, y2)))
 
+    gif_path = './static/RedBtn.gif'
     # Draw rectangles around the detected numbers
     for number, x1, y1, x2, y2 in digit_numbers:
+        image = overlay_gif(image, gif_path, x1, y1)
         cv2.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 2)
         center_x = (x1 + x2) // 2
         center_y = (y1 + y2) // 2
