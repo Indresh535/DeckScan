@@ -43,6 +43,7 @@
             <th scope="col">Sl No</th>
             <th scope="col">Cabin Number</th>
             <th scope="col">Coordinates</th>
+            <th scope="col">Background Color</th>
         </tr>
         </thead>
         <tbody>
@@ -51,6 +52,7 @@
             <td>{{ i + 1 }}</td>
             <td>{{ number }}</td>
             <td>{{ (x1 + x2) // 2 }}, {{ (y1 + y2) // 2 }}</td>
+            <td>{{ color }}</td>
         </tr>
         {% endfor %}
     </tbody>
