@@ -26,78 +26,77 @@
         <h4>Scan Result</h4>
         <hr/>
         <div class="row">
-    <div class="col-4">
-        <h4>Uploaded Image</h4>
-        <img src="{{ url_for('static', filename='uploads/' ~ filename) }}" alt="Uploaded Image">
-    </div>
-
-    <div class="col-4" id="uploaded-image">
-        <h4>Processed Image</h4>
-        <img  id="image" src="{{ url_for('static', filename='uploads/output_' ~ filename) }}" alt="Processed Image">
-    </div>
-    <div class="col-4">
-    <table class="table table-striped-columns table-hover table-bordered table-responsive caption-top" id="resultTable">
-        <caption>Detected Cabin Numbers and Coordinates</caption>
-        <thead>
-        <tr>
-            <th scope="col">Sl No</th>
-            <th scope="col">Cabin Number</th>
-            <th scope="col">Coordinates</th>
-            <th scope="col">Background Color</th>
-        </tr>
-        </thead>
-        <tbody>
-        {% for i, (number, x1, y1, x2, y2) in enumerate(result.numbers) %}
-        <tr scope="row">
-            <td>{{ i + 1 }}</td>
-            <td>{{ number }}</td>
-            <td>{{ (x1 + x2) // 2 }}, {{ (y1 + y2) // 2 }}</td>
-            <td>{{ color }}</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-    </table>
-    </div>
-</div>
+            <div class="col-4">
+                <h4>Uploaded Image</h4>
+                <img src="{{ url_for('static', filename='uploads/' ~ filename) }}" alt="Uploaded Image">
+            </div>
+            <div class="col-4" id="uploaded-image">
+                <h4>Processed Image</h4>
+                <img id="image" src="{{ url_for('static', filename='uploads/output_' ~ filename) }}" alt="Processed Image">
+            </div>
+            <div class="col-4">
+                <table class="table table-striped-columns table-hover table-bordered table-responsive caption-top" id="resultTable">
+                    <caption>Detected Cabin Numbers and Coordinates</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">Sl No</th>
+                            <th scope="col">Cabin Number</th>
+                            <th scope="col">Coordinates</th>
+                            <th scope="col">Background Color</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for i, (number, x1, y1, x2, y2) in enumerate(result.numbers) %}
+                        <tr scope="row">
+                            <td>{{ i + 1 }}</td>
+                            <td>{{ number }}</td>
+                            <td>{{ (x1 + x2) // 2 }}, {{ (y1 + y2) // 2 }}</td>
+                            <td>{{ color }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
     <script>
         const image = document.getElementById('image');
         let startX, startY, endX, endY;
         let selectionBox = null;
-    
+
         image.addEventListener('mousedown', (e) => {
             startX = e.offsetX;
             startY = e.offsetY;
-    
+
             selectionBox = document.createElement('div');
             selectionBox.classList.add('selection-box');
             selectionBox.style.left = startX + 'px';
             selectionBox.style.top = startY + 'px';
             document.getElementById('uploaded-image').appendChild(selectionBox);
         });
-    
+
         image.addEventListener('mousemove', (e) => {
             if (!selectionBox) return;
-    
+
             endX = e.offsetX;
             endY = e.offsetY;
-    
+
             selectionBox.style.width = Math.abs(endX - startX) + 'px';
             selectionBox.style.height = Math.abs(endY - startY) + 'px';
             selectionBox.style.left = Math.min(endX, startX) + 'px';
             selectionBox.style.top = Math.min(endY, startY) + 'px';
         });
-    
+
         image.addEventListener('mouseup', async (e) => {
             endX = e.offsetX;
             endY = e.offsetY;
             const filename = '{{ filename }}';
             const x1 = Math.min(startX, endX);
             const y1 = Math.min(startY, endY);
-            const x2 = Math.max(startX, endX)+300;
-            const y2 = Math.max(startY, endY)+300;
+            const x2 = Math.max(startX, endX);
+            const y2 = Math.max(startY, endY);
             console.log(`Selected coordinates: x1=${x1}, y1=${y1}, x2=${x2}, y2=${y2}`);
-    
+
             try {
                 const response = await fetch('/process_area', {
                     method: 'POST',
@@ -119,7 +118,7 @@
             selectionBox.remove();
             selectionBox = null;
         });
-    
+
         function updateTable(newNumbers) {
             const table = document.querySelector('table');
             newNumbers.forEach((number, index) => {
@@ -142,7 +141,7 @@
         $(document).ready(function(){
             $('#resultTable').dataTable();
         });
-        </script>
+    </script>
 </body>
 </html>
 

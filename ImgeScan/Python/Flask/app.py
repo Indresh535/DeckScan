@@ -124,12 +124,13 @@ def process_image(image_path, threshold, noise_reduction, morph_transform):
             (top_left, top_right, bottom_right, bottom_left) = bbox
             x1, y1 = int(top_left[0]), int(top_left[1])
             x2, y2 = int(bottom_right[0]), int(bottom_right[1])
-            digit_numbers.append((text, x1, y1, x2, y2, get_hex_color(image, x1, y1, x2, y2)))
+            # digit_numbers.append((text, x1, y1, x2, y2, get_hex_color(image, x1, y1, x2, y2)))
+            digit_numbers.append((text, x1, y1, x2, y2))
 
     gif_path = './static/RedBtn.gif'
     # Draw rectangles around the detected numbers
     for number, x1, y1, x2, y2 in digit_numbers:
-        image = overlay_gif(image, gif_path, x1, y1)
+        # image = overlay_gif(image, gif_path, x1, y1)
         cv2.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 2)
         center_x = (x1 + x2) // 2
         center_y = (y1 + y2) // 2
