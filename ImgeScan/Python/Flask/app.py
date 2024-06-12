@@ -47,50 +47,103 @@ def upload_file():
 
 @app.route('/process_area', methods=['POST'])
 def process_area():
-    data = request.get_json()
+    data = request.json
     filename = data['filename']
-    x1, y1, x2, y2 = data['x1'], data['y1'], data['x2'], data['y2']
-    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    x1 = data['x1']
+    y1 = data['y1']
+    x2 = data['x2']
+    y2 = data['y2']
+    
+    image_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    image = cv2.imread(image_path)
+    hex_color = get_hex_color(image, x1, y1, x2, y2)
+    
+    return jsonify({'color': hex_color})
 
-    # Process the specific area
-    area_result = process_image_area(filepath, x1, y1, x2, y2)
-    return jsonify(area_result)
 
 
 def get_hex_color(image, x1, y1, x2, y2):
     # Crop the area of the detected number
-    cropped_area = image[y1:y2, x1:x2]
+    region = image[y1:y2, x1:x2]
     # Calculate the average color in the cropped area
-    avg_color_per_row = np.average(cropped_area, axis=0)
-    avg_color = np.average(avg_color_per_row, axis=0)
+    average_color = region.mean(axis=0).mean(axis=0)
     # Convert the average color to hexadecimal format
-    hex_color = '#{:02x}{:02x}{:02x}'.format(int(avg_color[2]), int(avg_color[1]), int(avg_color[0]))
-    return hex_color
+    color_hex = "#{:02x}{:02x}{:02x}".format(int(average_color[2]), int(average_color[1]), int(average_color[0]))
+    return color_hex
 
 
-def overlay_gif(image, gif_path, x, y):
+
+def overlay_gif(image, gif_path, x1, y1, x2, y2):
     # Open the GIF file
     gif = Image.open(gif_path)
     # Convert GIF frames to a format compatible with OpenCV
     gif_frames = [cv2.cvtColor(np.array(frame), cv2.COLOR_RGBA2BGRA) for frame in ImageSequence.Iterator(gif)]
-    
+
     # Resize the GIF frames to fit the detected area
-    height, width, _ = image.shape
     for i in range(len(gif_frames)):
         gif_frames[i] = cv2.resize(gif_frames[i], (x2 - x1, y2 - y1))
-
+        
     # Overlay the GIF frames on the image
     for frame in gif_frames:
-        y1, y2, x1, x2 = y, y + frame.shape[0], x, x + frame.shape[1]
+        y1_frame, y2_frame, x1_frame, x2_frame = y1, y1 + frame.shape[0], x1, x1 + frame.shape[1]
         alpha_s = frame[:, :, 3] / 255.0
         alpha_l = 1.0 - alpha_s
         for c in range(0, 3):
-            image[y1:y2, x1:x2, c] = (alpha_s * frame[:, :, c] + alpha_l * image[y1:y2, x1:x2, c])
-    
+            image[y1_frame:y2_frame, x1_frame:x2_frame, c] = (
+                alpha_s * frame[:, :, c] + alpha_l * image[y1_frame:y2_frame, x1_frame:x2_frame, c]
+            )
     return image
 
 
 def process_image(image_path, threshold, noise_reduction, morph_transform):
+    image = cv2.imread(image_path)
+    gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    # Apply thresholding
+    _, binary_image = cv2.threshold(gray_image, threshold, 255, cv2.THRESH_BINARY_INV)
+
+    # Apply noise reduction if selected
+    if noise_reduction:
+        binary_image = cv2.medianBlur(binary_image, 3)
+    # Apply morphological transformations if selected
+    if morph_transform == 'dilation':
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+        binary_image = cv2.dilate(binary_image, kernel, iterations=1)
+    elif morph_transform == 'erosion':
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+        binary_image = cv2.erode(binary_image, kernel, iterations=1)
+    # Initialize EasyOCR reader
+    reader = easyocr.Reader(['en'])
+    results = reader.readtext(binary_image)
+    
+    # Initialize a list to store detected digit numbers and their coordinates
+    digit_numbers = []
+    # Iterate over the results to extract coordinates and digits
+    for (bbox, text, prob) in results:
+        if text.isdigit():
+            (top_left, top_right, bottom_right, bottom_left) = bbox
+            x1, y1 = int(top_left[0]), int(top_left[1])
+            x2, y2 = int(bottom_right[0]), int(bottom_right[1])
+            hex_color = get_hex_color(image, x1, y1, x2, y2)
+            digit_numbers.append((text, x1, y1, x2, y2, hex_color))
+
+    gif_path = './static/RedBtn.gif'
+    for number, x1, y1, x2, y2, hex_color in digit_numbers:
+        image = overlay_gif(image, gif_path, x1, y1, x2, y2)
+        
+    # Draw rectangles around the detected numbers
+    # for number, x1, y1, x2, y2 in digit_numbers:
+    #     # image = overlay_gif(image, gif_path, x1, y1, x2, y2)
+    #     cv2.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 2)
+    #     center_x = (x1 + x2) // 2
+    #     center_y = (y1 + y2) // 2
+    #     coordinates_text = f"({center_x}, {center_y})"
+    #     cv2.putText(image, coordinates_text, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1, cv2.LINE_AA)
+
+    # Save the output image
+    output_image_path = os.path.join(app.config['UPLOAD_FOLDER'], 'output_' + os.path.basename(image_path))
+    cv2.imwrite(output_image_path, image)
+
+    return {'numbers': digit_numbers, 'output_image_path': output_image_path}
     print("process_image image_path", image_path)
     # Read the image using OpenCV
     image = cv2.imread(image_path)
