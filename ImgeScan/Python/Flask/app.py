@@ -72,27 +72,27 @@ def get_hex_color(image, x1, y1, x2, y2):
     return color_hex
 
 
-
 def overlay_gif(image, gif_path, x1, y1, x2, y2):
-    # Open the GIF file
     gif = Image.open(gif_path)
-    # Convert GIF frames to a format compatible with OpenCV
-    gif_frames = [cv2.cvtColor(np.array(frame), cv2.COLOR_RGBA2BGRA) for frame in ImageSequence.Iterator(gif)]
+    gif_frames = []
 
-    # Resize the GIF frames to fit the detected area
-    for i in range(len(gif_frames)):
-        gif_frames[i] = cv2.resize(gif_frames[i], (x2 - x1, y2 - y1))
-        
-    # Overlay the GIF frames on the image
-    for frame in gif_frames:
-        y1_frame, y2_frame, x1_frame, x2_frame = y1, y1 + frame.shape[0], x1, x1 + frame.shape[1]
-        alpha_s = frame[:, :, 3] / 255.0
+    for frame in ImageSequence.Iterator(gif):
+        frame = frame.convert("RGBA")
+        frame = frame.resize((x2 - x1, y2 - y1), Image.Resampling.LANCZOS)
+        gif_frames.append(np.array(frame))
+
+    for i, frame in enumerate(gif_frames):
+        frame_bgra = cv2.cvtColor(frame, cv2.COLOR_RGBA2BGRA)
+        alpha_s = frame_bgra[:, :, 3] / 255.0
         alpha_l = 1.0 - alpha_s
+
         for c in range(0, 3):
-            image[y1_frame:y2_frame, x1_frame:x2_frame, c] = (
-                alpha_s * frame[:, :, c] + alpha_l * image[y1_frame:y2_frame, x1_frame:x2_frame, c]
+            image[y1:y1+frame_bgra.shape[0], x1:x1+frame_bgra.shape[1], c] = (
+                alpha_s * frame_bgra[:, :, c] +
+                alpha_l * image[y1:y1+frame_bgra.shape[0], x1:x1+frame_bgra.shape[1], c]
             )
     return image
+
 
 
 def process_image(image_path, threshold, noise_reduction, morph_transform):
@@ -131,7 +131,7 @@ def process_image(image_path, threshold, noise_reduction, morph_transform):
         image = overlay_gif(image, gif_path, x1, y1, x2, y2)
         
     # Draw rectangles around the detected numbers
-    # for number, x1, y1, x2, y2 in digit_numbers:
+    # for number, x1, y1, x2, y2, _ in digit_numbers:
     #     # image = overlay_gif(image, gif_path, x1, y1, x2, y2)
     #     cv2.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 2)
     #     center_x = (x1 + x2) // 2
