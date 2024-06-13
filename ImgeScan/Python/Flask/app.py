@@ -6,6 +6,7 @@ import easyocr
 import numpy as np
 from selectinwindow import DragRectangle, dragrect
 from PIL import Image, ImageSequence
+import csv
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -15,12 +16,58 @@ app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg'}
 # Create uploads directory if not exists
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
+
+color_categories = {
+    "#a7887a": "SP Suite",
+    "#A2ACCE": "CW Suite",
+    "#CCD1E5": "CO Suite",
+    "#B8E3E6": "N1 Suite",
+    "#DAEFF2": "N2 Suite",
+    "#FFFFFF": "W",
+    "#afc8ca": "P1 Balcony",
+    "#DFC3C3": "P2 Balcony",
+    "#C6979A": "P3 Balcony",
+    "#FED5B3": "V1 Balcony",
+    "#D0A893": "V2 Balcony",
+    "#EDDCD1": "V3 Balcony",
+    "#9DA768": "04 OceanView",
+    "#FFDD97": "05 OceanView",
+    "#CBDBD5": "10 Inside"
+}
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
 
 @app.route('/')
 def index():
     return render_template('index.html')
+
+@app.route('/export_csv')
+def export_csv():
+    result = request.args.get('result')
+    if not result:
+        return redirect(url_for('index'))
+
+    numbers = eval(result)  # Safely convert string back to list
+    csv_path = os.path.join(app.config['UPLOAD_FOLDER'], 'detected_cabins.csv')
+    
+    with open(csv_path, 'w', newline='') as csvfile:
+        fieldnames = ['Sl No', 'Cabin Number', 'Coordinates', 'Background Color', 'Suite Label']
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+
+        writer.writeheader()
+        for i, (number, x1, y1, x2, y2, color, label) in enumerate(numbers):
+            coordinates = f"{(x1 + x2) // 2}, {(y1 + y2) // 2}"
+            writer.writerow({
+                'Sl No': i + 1,
+                'Cabin Number': number,
+                'Coordinates': coordinates,
+                'Background Color': color,
+                'Suite Label': label
+            })
+
+    return send_file(csv_path, as_attachment=True, download_name='detected_cabins.csv')
+
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
@@ -54,8 +101,22 @@ def process_area():
     x2 = data['x2']
     y2 = data['y2']
     
+    print(f"Received coordinates: x1={x1}, y1={y1}, x2={x2}, y2={y2}")
+    
     image_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     image = cv2.imread(image_path)
+    if image is None:
+        return jsonify({'error': 'Image not found'}), 404
+    
+    # Ensure the coordinates are within image bounds
+    height, width = image.shape[:2]
+    x1, x2 = sorted([max(0, x1), min(width, x2)])
+    y1, y2 = sorted([max(0, y1), min(height, y2)])
+
+    # Ensure the coordinates are valid
+    if x1 == x2 or y1 == y2:
+        print("Invalid area selected.")
+        return jsonify({'error': 'Invalid area selected'}), 400
     hex_color = get_hex_color(image, x1, y1, x2, y2)
     
     return jsonify({'color': hex_color})
@@ -124,10 +185,11 @@ def process_image(image_path, threshold, noise_reduction, morph_transform):
             x1, y1 = int(top_left[0]), int(top_left[1])
             x2, y2 = int(bottom_right[0]), int(bottom_right[1])
             hex_color = get_hex_color(image, x1, y1, x2, y2)
-            digit_numbers.append((text, x1, y1, x2, y2, hex_color))
+            label = color_categories.get(hex_color, "Unknown")
+            digit_numbers.append((text, x1, y1, x2, y2, hex_color, label))
 
     gif_path = './static/RedBtn.gif'
-    for number, x1, y1, x2, y2, hex_color in digit_numbers:
+    for number, x1, y1, x2, y2, hex_color, label in digit_numbers:
         image = overlay_gif(image, gif_path, x1, y1, x2, y2)
         
     # Draw rectangles around the detected numbers

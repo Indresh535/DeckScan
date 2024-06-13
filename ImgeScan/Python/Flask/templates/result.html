@@ -43,19 +43,23 @@
                             <th scope="col">Cabin Number</th>
                             <th scope="col">Coordinates</th>
                             <th scope="col">Background Color</th>
+                            <th scope="col">Suite Label</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% for i, (number, x1, y1, x2, y2, color) in enumerate(result.numbers) %}
+                        {% for i, (number, x1, y1, x2, y2, color, label) in enumerate(result.numbers) %}
                         <tr scope="row">
                             <td>{{ i + 1 }}</td>
                             <td>{{ number }}</td>
                             <td>{{ (x1 + x2) // 2 }}, {{ (y1 + y2) // 2 }}</td>
                             <td>{{ color }} <p style="background-color: {{ color }}; width: 50px; height: 20px; display: inline-block; margin: 0;"></p></td>
-                        
+                            <td>{{ label }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
+                    <tfoot>
+                    <a href="{{ url_for('export_csv', result=result.numbers) }}" class="btn btn-primary my-4">Export to CSV</a>
+                    </tfoot>
                 </table>
             </div>
         </div>
@@ -130,6 +134,7 @@
                 row.insertCell(3).innerText = number[5]; // Add background color to the table
             });
         }
+        
     </script>
      <!-- jQuery -->
      <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
