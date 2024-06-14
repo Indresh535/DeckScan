@@ -135,22 +135,21 @@ def get_hex_color(image, x1, y1, x2, y2):
 
 def overlay_gif(image, gif_path, x1, y1, x2, y2):
     gif = Image.open(gif_path)
-    gif_frames = []
-
-    for frame in ImageSequence.Iterator(gif):
-        frame = frame.convert("RGBA")
-        frame = frame.resize((x2 - x1, y2 - y1), Image.Resampling.LANCZOS)
-        gif_frames.append(np.array(frame))
-
+    gif_frames = [frame.copy() for frame in ImageSequence.Iterator(gif)]
+    
     for i, frame in enumerate(gif_frames):
-        frame_bgra = cv2.cvtColor(frame, cv2.COLOR_RGBA2BGRA)
+        frame = frame.convert("RGBA")
+        gif_frames[i] = frame.resize((x2 - x1, y2 - y1), Image.LANCZOS)
+    
+    for i, frame in enumerate(gif_frames):
+        frame_bgra = cv2.cvtColor(np.array(frame), cv2.COLOR_RGBA2BGRA)
         alpha_s = frame_bgra[:, :, 3] / 255.0
         alpha_l = 1.0 - alpha_s
 
         for c in range(0, 3):
-            image[y1:y1+frame_bgra.shape[0], x1:x1+frame_bgra.shape[1], c] = (
+            image[y1:y1 + frame_bgra.shape[0], x1:x1 + frame_bgra.shape[1], c] = (
                 alpha_s * frame_bgra[:, :, c] +
-                alpha_l * image[y1:y1+frame_bgra.shape[0], x1:x1+frame_bgra.shape[1], c]
+                alpha_l * image[y1:y1 + frame_bgra.shape[0], x1:x1 + frame_bgra.shape[1], c]
             )
     return image
 
@@ -190,7 +189,16 @@ def process_image(image_path, threshold, noise_reduction, morph_transform):
 
     gif_path = './static/RedBtn.gif'
     for number, x1, y1, x2, y2, hex_color, label in digit_numbers:
-        image = overlay_gif(image, gif_path, x1, y1, x2, y2)
+        # Overlay GIF in the center of the detected text area
+        center_x = (x1 + x2) // 2
+        center_y = (y1 + y2) // 2
+        gif_width, gif_height = Image.open(gif_path).size
+        gif_x1 = center_x - gif_width // 2
+        gif_y1 = center_y - gif_height // 2
+        gif_x2 = gif_x1 + gif_width
+        gif_y2 = gif_y1 + gif_height
+        image = overlay_gif(image, gif_path, gif_x1, gif_y1, gif_x2, gif_y2)
+
         
     # Draw rectangles around the detected numbers
     # for number, x1, y1, x2, y2, _ in digit_numbers:
