@@ -65,7 +65,72 @@
             </div>
         </div>
     </div>
+       <!-- ***************** Manually Crop the image area and send again to scan cabins co-ordinates ******************** -->
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- DataTables JS -->
+    <script src="http://cdn.datatables.net/1.10.2/js/jquery.dataTables.min.js"></script>
+    <!-- Bootstrap JS and dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-jcrop/0.9.15/js/jquery.Jcrop.js"></script>
+    
     <script>
+        $(document).ready(function(){
+            $('#resultTable').dataTable();
+        });
+    </script>
+
+    <script>
+        $(document).ready(function(){
+            $('#image').Jcrop({
+                onSelect: async function(c){
+                    const filename = '{{ filename }}';
+                    console.log("x ", c.x);
+                    console.log("y ", c.y);
+                    console.log("w ", c.w);
+                    console.log("h ", c.h);
+                    const x1 =  c.x;
+                    const y1 =  c.y;
+                    const x2 =  c.w;
+                    const y2 =  c.h;
+
+                    try {
+                        const response = await fetch('/process_area', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ filename, x1, y1, x2, y2 }),
+                        });
+                        console.log("response ",response);
+                        const result = await response.json();
+                        console.log("result ",result); // Log the result for debugging
+                        if (result.error) {
+                            alert(result.error);
+                        } else {
+                            updateTable(result.numbers);
+                        }
+                    } catch (error) {
+                        console.error('Error:', error);
+                    }
+                    function updateTable(newNumbers) {
+                        const table = document.querySelector('table');
+                        newNumbers.forEach((number, index) => {
+                            const row = table.insertRow();
+                            row.insertCell(0).innerText = table.rows.length - 1;
+                            row.insertCell(1).innerText = number[0];
+                            row.insertCell(2).innerText = `${(number[1] + number[3]) / 2}, ${(number[2] + number[4]) / 2}`;
+                            row.insertCell(3).innerText = number[5]; // Add background color to the table
+                        });
+                    }
+
+                }
+            })
+        })
+    </script>
+    <!-- <script>
         const image = document.getElementById('image-no-use');
         let startX, startY, endX, endY;
         let selectionBox = null;
@@ -116,7 +181,7 @@
                 if (result.error) {
                     alert(result.error);
                 } else {
-                    updateTable(result.numbers);
+                    updateTable1(result.numbers);
                 }
             } catch (error) {
                 console.error('Error:', error);
@@ -125,7 +190,7 @@
             selectionBox = null;
         });
 
-        function updateTable(newNumbers) {
+        function updateTable1(newNumbers) {
             const table = document.querySelector('table');
             newNumbers.forEach((number, index) => {
                 const row = table.insertRow();
@@ -136,36 +201,6 @@
             });
         }
         
-    </script>
-     <!-- jQuery -->
-     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-     <!-- DataTables JS -->
-     <script src="http://cdn.datatables.net/1.10.2/js/jquery.dataTables.min.js"></script>
-     <!-- Bootstrap JS and dependencies -->
-     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
-     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
-
-     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-jcrop/0.9.15/js/jquery.Jcrop.js"></script>
-     
-    <script>
-        $(document).ready(function(){
-            $('#resultTable').dataTable();
-        });
-    </script>
-
-    <script>
-        $(document).ready(function(){
-            $('#image').Jcrop({
-                onSelect: function(c){
-                    console.log(c);
-
-                    console.log("x ", c.x);
-                    console.log("y ", c.y);
-                    console.log("w ", c.w);
-                    console.log("h ", c.h);
-                }
-            })
-        })
-    </script>
+    </script> -->
 </body>
 </html>

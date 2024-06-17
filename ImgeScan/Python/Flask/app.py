@@ -101,7 +101,7 @@ def process_area():
     x2 = data['x2']
     y2 = data['y2']
     
-    print(f"Received coordinates: x1={x1}, y1={y1}, x2={x2}, y2={y2}")
+    print(f"Python Backend Received coordinates: x1={x1}, y1={y1}, x2={x2}, y2={y2}")
     
     image_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     image = cv2.imread(image_path)
@@ -130,6 +130,7 @@ def get_hex_color(image, x1, y1, x2, y2):
     average_color = region.mean(axis=0).mean(axis=0)
     # Convert the average color to hexadecimal format
     color_hex = "#{:02x}{:02x}{:02x}".format(int(average_color[2]), int(average_color[1]), int(average_color[0]))
+ 
     return color_hex
 
 
