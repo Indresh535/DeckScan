@@ -92,6 +92,9 @@ def upload_file():
 
     return redirect(request.url)
 
+
+
+
 @app.route('/process_area', methods=['POST'])
 def process_area():
     data = request.json
@@ -101,7 +104,7 @@ def process_area():
     x2 = data['x2']
     y2 = data['y2']
     
-    print(f"Python Backend Received coordinates: x1={x1}, y1={y1}, x2={x2}, y2={y2}")
+    print(f"Received coordinates: x1={x1}, y1={y1}, x2={x2}, y2={y2}")
     
     image_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     image = cv2.imread(image_path)
@@ -117,9 +120,30 @@ def process_area():
     if x1 == x2 or y1 == y2:
         print("Invalid area selected.")
         return jsonify({'error': 'Invalid area selected'}), 400
-    hex_color = get_hex_color(image, x1, y1, x2, y2)
-    
-    return jsonify({'color': hex_color})
+
+    # Extract and process the selected area for OCR
+    selected_area = image[y1:y2, x1:x2]
+    gray_area = cv2.cvtColor(selected_area, cv2.COLOR_BGR2GRAY)
+    _, binary_area = cv2.threshold(gray_area, 150, 255, cv2.THRESH_BINARY_INV)
+
+    # Initialize EasyOCR reader
+    reader = easyocr.Reader(['en'])
+    results = reader.readtext(binary_area)
+
+    # Initialize a list to store detected digit numbers and their coordinates
+    digit_numbers = []
+
+    # Iterate over the results to extract coordinates and digits
+    for (bbox, text, prob) in results:
+        if text.isdigit():
+            (top_left, top_right, bottom_right, bottom_left) = bbox
+            x1_area, y1_area = int(top_left[0]), int(top_left[1])
+            x2_area, y2_area = int(bottom_right[0]), int(bottom_right[1])
+            hex_color = get_hex_color(selected_area, x1_area, y1_area, x2_area, y2_area)
+            label = color_categories.get(hex_color, "Unknown")
+            digit_numbers.append((text, x1 + x1_area, y1 + y1_area, x1 + x2_area, y1 + y2_area, hex_color, label))
+
+    return jsonify({'numbers': digit_numbers})
 
 
 
