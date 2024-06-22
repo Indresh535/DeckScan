@@ -59,7 +59,7 @@
                         {% endfor %}
                     </tbody>
                     <tfoot>
-                    <a href="{{ url_for('export_csv', result=result.numbers) }}" class="btn btn-primary my-4">Export to CSV</a>
+                    <a href="{{ url_for('export_csv', result=result.numbers|tojson) }}" class="btn btn-primary my-4">Export to CSV</a>
                     </tfoot>
                 </table>
             </div>

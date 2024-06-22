@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, jsonify
+from flask import Flask, render_template, request, redirect, url_for, jsonify, send_file
 from werkzeug.utils import secure_filename
 import cv2
 import easyocr
@@ -56,15 +56,20 @@ def export_csv():
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
         writer.writeheader()
-        for i, (number, x1, y1, x2, y2, color, label) in enumerate(numbers):
-            coordinates = f"{(x1 + x2) // 2}, {(y1 + y2) // 2}"
-            writer.writerow({
-                'Sl No': i + 1,
-                'Cabin Number': number,
-                'Coordinates': coordinates,
-                'Background Color': color,
-                'Suite Label': label
-            })
+        for i, number in enumerate(numbers):
+            if len(number) == 7:
+                cabin_number, x1, y1, x2, y2, color, label = number
+                coordinates = f"{(x1 + x2) // 2}, {(y1 + y2) // 2}"
+                writer.writerow({
+                    'Sl No': i + 1,
+                    'Cabin Number': cabin_number,
+                    'Coordinates': coordinates,
+                    'Background Color': color,
+                    'Suite Label': label
+                })
+            else:
+                print(f"Unexpected data format: {number}")  # Debugging: Print unexpected data format
+
 
     return send_file(csv_path, as_attachment=True, download_name='detected_cabins.csv')
 
