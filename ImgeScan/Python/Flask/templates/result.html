@@ -64,6 +64,7 @@
                 </table>
             </div>
         </div>
+        <button id="enable-crop" class="btn btn-secondary my-4">Enable Crop</button>
     </div>
        <!-- ***************** Manually Crop the image area and send again to scan cabins co-ordinates ******************** -->
     <!-- jQuery -->
@@ -84,6 +85,7 @@
 
     <script>
         $(document).ready(function(){
+            $('#enable-crop').on('click', function(){
             $('#image').Jcrop({
                 onSelect: async function(c){
                     const filename = '{{ filename }}';
@@ -128,6 +130,7 @@
 
                 }
             })
+        })
         })
     </script>
     <!-- <script>
