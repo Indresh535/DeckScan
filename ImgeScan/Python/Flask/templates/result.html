@@ -65,6 +65,7 @@
             </div>
         </div>
         <button id="enable-crop" class="btn btn-secondary my-4">Enable Crop</button>
+        <button id="save-selection" class="btn btn-primary my-4">Save</button>
     </div>
        <!-- ***************** Manually Crop the image area and send again to scan cabins co-ordinates ******************** -->
     <!-- jQuery -->
@@ -82,56 +83,73 @@
             $('#resultTable').dataTable();
         });
     </script>
-
     <script>
         $(document).ready(function(){
+            $('#resultTable').dataTable();
+
+            let cropApi;
+            let selection = {};
+
             $('#enable-crop').on('click', function(){
-            $('#image').Jcrop({
-                onSelect: async function(c){
-                    const filename = '{{ filename }}';
-                    console.log("x ", c.x);
-                    console.log("y ", c.y);
-                    console.log("w ", c.w);
-                    console.log("h ", c.h);
-                    const x1 =  c.x;
-                    const y1 =  c.y;
-                    const x2 =  c.w;
-                    const y2 =  c.h;
-
-                    try {
-                        const response = await fetch('/process_area', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({ filename, x1, y1, x2, y2 }),
-                        });
-                        console.log("response ",response);
-                        const result = await response.json();
-                        console.log("result ",result); // Log the result for debugging
-                        if (result.error) {
-                            alert(result.error);
-                        } else {
-                            updateTable(result.numbers);
-                        }
-                    } catch (error) {
-                        console.error('Error:', error);
-                    }
-                    function updateTable(newNumbers) {
-                        const table = document.querySelector('table');
-                        newNumbers.forEach((number, index) => {
-                            const row = table.insertRow();
-                            row.insertCell(0).innerText = table.rows.length - 1;
-                            row.insertCell(1).innerText = number[0];
-                            row.insertCell(2).innerText = `${(number[1] + number[3]) / 2}, ${(number[2] + number[4]) / 2}`;
-                            row.insertCell(3).innerText = number[5]; // Add background color to the table
-                        });
-                    }
-
+                if (cropApi) {
+                    cropApi.destroy();
+                    $('#save-selection').hide();
                 }
-            })
-        })
-        })
+
+                $('#image').Jcrop({
+                    onSelect: function(c){
+                        selection = c;
+                        $('#save-selection').show();
+                    }
+                }, function(){
+                    cropApi = this;
+                });
+            });
+
+            $('#save-selection').on('click', async function(){
+                const filename = '{{ filename }}';
+                const x1 = selection.x;
+                const y1 = selection.y;
+                const x2 = selection.w;
+                const y2 = selection.h;
+
+                try {
+                    const response = await fetch('/process_area', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ filename, x1, y1, x2, y2 }),
+                    });
+                    console.log("response ",response);
+                    const result = await response.json();
+                    console.log("result ",result); // Log the result for debugging
+                    if (result.error) {
+                        alert(result.error);
+                    } else {
+                        updateTable(result.numbers);
+                        cropApi.destroy();
+                        $('#save-selection').hide();
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                }
+
+                function updateTable(newNumbers) {
+                    const table = document.querySelector('table tbody');
+                    table.innerHTML = '';
+                    newNumbers.forEach((number, index) => {
+                        const row = table.insertRow();
+                        row.insertCell(0).innerText = index + 1;
+                        row.insertCell(1).innerText = number[0];
+                        row.insertCell(2).innerText = `${(number[1] + number[3]) / 2}, ${(number[2] + number[4]) / 2}`;
+                        row.insertCell(3).innerText = number[5];
+                        row.insertCell(3).innerHTML = `${number[5]} <p style="background-color: ${number[5]}; width: 50px; height: 20px; display: inline-block; margin: 0;"></p>`;
+                        row.insertCell(4).innerText = number[6];
+                    });
+                }
+            });
+        });
     </script>
     <!-- <script>
         const image = document.getElementById('image-no-use');
