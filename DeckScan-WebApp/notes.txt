@@ -1,3 +1,11 @@
+ python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
+ 
+ .\virualenv\Scripts\activate
+ python app.py
+ deactivate
 
 
 ### Training Your Own Model for OCR
