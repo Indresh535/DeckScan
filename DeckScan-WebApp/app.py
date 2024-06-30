@@ -103,19 +103,30 @@ def upload_file():
 @app.route('/process_area', methods=['POST'])
 def process_area():
     data = request.json
+    print("image repost data", data)
     filename = data['filename']
     x1 = data['x1']
     y1 = data['y1']
     x2 = data['x2']
     y2 = data['y2']
     
+    print(f"data ", data)
     print(f"Received coordinates: x1={x1}, y1={y1}, x2={x2}, y2={y2}")
-    
-    image_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-    image = cv2.imread(image_path)
+    image_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)    
+
+    image = cv2.imread(image_path) # read croped image    
+
     if image is None:
-        return jsonify({'error': 'Image not found'}), 404
+        return jsonify({'error': 'Image not found'}), 404    
+
+    # Crop the selected area
+    selected_area = image[y1:y2, x1:x2]
     
+    custom_name = "croped_image"
+    # Save the cropped image with the custom name
+    cropped_image_path = os.path.join(app.config['UPLOAD_FOLDER'], f'{custom_name}_{filename}')
+    cv2.imwrite(cropped_image_path, selected_area)
+
     # Ensure the coordinates are within image bounds
     height, width = image.shape[:2]
     x1, x2 = sorted([max(0, x1), min(width, x2)])

@@ -90,6 +90,8 @@
             let cropApi;
             let selection = {};
 
+
+
             $('#enable-crop').on('click', function(){
                 if (cropApi) {
                     cropApi.destroy();
@@ -110,8 +112,10 @@
                 const filename = '{{ filename }}';
                 const x1 = selection.x;
                 const y1 = selection.y;
-                const x2 = selection.w;
-                const y2 = selection.h;
+                const x2 = selection.x2;
+                const y2 = selection.y2;
+            console.log("selection ", cropApi)
+            console.log("selection ", selection)
 
                 try {
                     const response = await fetch('/process_area', {
