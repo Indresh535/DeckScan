@@ -174,23 +174,26 @@ def get_hex_color(image, x1, y1, x2, y2):
     return color_hex
 
 
-def overlay_gif(image, gif_path, x1, y1, x2, y2):
-    gif = Image.open(gif_path)
-    gif_frames = [frame.copy() for frame in ImageSequence.Iterator(gif)]
+def overlay_gif(image, gif_path, x1, y1, x2, y2):    
+    gif = Image.open(gif_path)  # Open the GIF file
+    gif_frames = [frame.copy() for frame in ImageSequence.Iterator(gif)] # Extract frames from the GIF into a list
     
+    # Resize each frame of the GIF to fit the specified area
     for i, frame in enumerate(gif_frames):
         frame = frame.convert("RGBA")
         gif_frames[i] = frame.resize((x2 - x1, y2 - y1), Image.LANCZOS)
     
+    # Overlay each frame onto the image
     for i, frame in enumerate(gif_frames):
-        frame_bgra = cv2.cvtColor(np.array(frame), cv2.COLOR_RGBA2BGRA)
-        alpha_s = frame_bgra[:, :, 3] / 255.0
-        alpha_l = 1.0 - alpha_s
+        frame_bgra = cv2.cvtColor(np.array(frame), cv2.COLOR_RGBA2BGRA)     # Convert frame to BGRA format for OpenCV
+        alpha_s = frame_bgra[:, :, 3] / 255.0   # Extract and normalize the alpha channel of the frame
+        alpha_l = 1.0 - alpha_s  # Calculate the inverse alpha channel
 
-        for c in range(0, 3):
+        # Blend the frame with the image
+        for c in range(0, 3): # Iterate over each color channel (B, G, R)
             image[y1:y1 + frame_bgra.shape[0], x1:x1 + frame_bgra.shape[1], c] = (
-                alpha_s * frame_bgra[:, :, c] +
-                alpha_l * image[y1:y1 + frame_bgra.shape[0], x1:x1 + frame_bgra.shape[1], c]
+                alpha_s * frame_bgra[:, :, c] +  # Blend the frame's color channel
+                alpha_l * image[y1:y1 + frame_bgra.shape[0], x1:x1 + frame_bgra.shape[1], c] # Blend the image's color channel
             )
     return image
 

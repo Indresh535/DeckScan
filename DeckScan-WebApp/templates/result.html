@@ -121,7 +121,7 @@
                 const y1 = selection.y;
                 const x2 = selection.x2;
                 const y2 = selection.y2;
-            console.log("selection ", cropApi)
+            console.log("cropApi ", cropApi)
             console.log("selection ", selection)
 
                 try {
@@ -147,16 +147,19 @@
                 }
 
                 function updateTable(newNumbers) {
-                    const table = document.querySelector('table tbody');
-                    table.innerHTML = '';
+                    const table = document.querySelector('#resultTable tbody');
+                    // table.innerHTML = '';
+                    console.log("newNumbers",  newNumbers)
                     newNumbers.forEach((number, index) => {
-                        const row = table.insertRow();
+                        const row = table.insertRow();                        
+            console.log("row  before", row)
                         row.insertCell(0).innerText = index + 1;
                         row.insertCell(1).innerText = number[0];
                         row.insertCell(2).innerText = `${(number[1] + number[3]) / 2}, ${(number[2] + number[4]) / 2}`;
                         row.insertCell(3).innerText = number[5];
                         row.insertCell(3).innerHTML = `${number[5]} <p style="background-color: ${number[5]}; width: 50px; height: 20px; display: inline-block; margin: 0;"></p>`;
                         row.insertCell(4).innerText = number[6];
+                        console.log("row  after", row)
                     });
                 }
             });
