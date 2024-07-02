@@ -147,20 +147,30 @@
                 }
 
                 function updateTable(newNumbers) {
-                    const table = document.querySelector('#resultTable tbody');
+                    const table = $('#resultTable').DataTable({'paging': true});
+                    var length = table.page.info().recordsTotal;
+                    // var table_length = table.data().count();
                     // table.innerHTML = '';
-                    console.log("newNumbers",  newNumbers)
                     newNumbers.forEach((number, index) => {
-                        const row = table.insertRow();                        
-            console.log("row  before", row)
-                        row.insertCell(0).innerText = index + 1;
-                        row.insertCell(1).innerText = number[0];
-                        row.insertCell(2).innerText = `${(number[1] + number[3]) / 2}, ${(number[2] + number[4]) / 2}`;
-                        row.insertCell(3).innerText = number[5];
-                        row.insertCell(3).innerHTML = `${number[5]} <p style="background-color: ${number[5]}; width: 50px; height: 20px; display: inline-block; margin: 0;"></p>`;
-                        row.insertCell(4).innerText = number[6];
-                        console.log("row  after", row)
+                        // Create an empty <tr> element and add it to the 1st position of the table:
+                       // const row = table.insertRow(0);   
+                        // Insert new cells (<td> elements) at the 1st and 2nd position 4rd etc of the "new" <tr> element:
+                        // row.insertCell(0).innerText = index + 1;
+                        // row.insertCell(1).innerText = number[0];
+                        // row.insertCell(2).innerText = `${(number[1] + number[3]) / 2}, ${(number[2] + number[4]) / 2}`;
+                        // row.insertCell(3).innerText = number[5];
+                        // row.insertCell(3).innerHTML = `${number[5]} <p style="background-color: ${number[5]}; width: 50px; height: 20px; display: inline-block; margin: 0;"></p>`;
+                        // row.insertCell(4).innerText = number[6];
+                        table.row.add([
+                        // length + index + 1,
+                        index + 1,
+                            number[0],
+                            `${(number[1] + number[3]) / 2}, ${(number[2] + number[4]) / 2}`,
+                            `${number[5]} <p style="background-color: ${number[5]}; width: 50px; height: 20px; display: inline-block; margin: 0;"></p>`,
+                            number[6]
+                        ]).draw(false);
                     });
+                    table.draw();
                 }
             });
         });
