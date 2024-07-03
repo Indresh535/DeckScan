@@ -16,4 +16,4 @@ accesslog = '-'
 # Enable error log
 errorlog = '-'
 
-timeout = 300  # or any value suitable for your use case
+timeout = 3000  # or any value suitable for your use case
