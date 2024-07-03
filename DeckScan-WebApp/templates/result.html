@@ -121,8 +121,6 @@
                 const y1 = selection.y;
                 const x2 = selection.x2;
                 const y2 = selection.y2;
-            console.log("cropApi ", cropApi)
-            console.log("selection ", selection)
 
                 try {
                     const response = await fetch('/process_area', {
@@ -132,9 +130,7 @@
                         },
                         body: JSON.stringify({ filename, x1, y1, x2, y2 }),
                     });
-                    console.log("response ",response);
                     const result = await response.json();
-                    console.log("result ",result); // Log the result for debugging
                     if (result.error) {
                         alert(result.error);
                     } else {
@@ -147,9 +143,9 @@
                 }
 
                 function updateTable(newNumbers) {
-                    const table = $('#resultTable').DataTable({'paging': true});
-                    var length = table.page.info().recordsTotal;
-                    // var table_length = table.data().count();
+                    const table = $('#resultTable').DataTable();
+                   // var length = table.page.info().recordsTotal;
+                    var table_length = table.rows.length - 1;
                     // table.innerHTML = '';
                     newNumbers.forEach((number, index) => {
                         // Create an empty <tr> element and add it to the 1st position of the table:
@@ -162,8 +158,9 @@
                         // row.insertCell(3).innerHTML = `${number[5]} <p style="background-color: ${number[5]}; width: 50px; height: 20px; display: inline-block; margin: 0;"></p>`;
                         // row.insertCell(4).innerText = number[6];
                         table.row.add([
-                        // length + index + 1,
-                        index + 1,
+                        table_length + index + 1,
+                        // index + 1,
+                        // table.rows.length - 1,
                             number[0],
                             `${(number[1] + number[3]) / 2}, ${(number[2] + number[4]) / 2}`,
                             `${number[5]} <p style="background-color: ${number[5]}; width: 50px; height: 20px; display: inline-block; margin: 0;"></p>`,
